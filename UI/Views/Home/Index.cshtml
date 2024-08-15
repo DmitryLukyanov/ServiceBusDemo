@@ -1,0 +1,35 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+@model IEnumerable<(string Query, DateTime Started, TimeSpan Duration, string ResultedLink)>
+
+<div class="text-center">
+    <h1 class="display-4">Operations history</h1>
+
+    <div class="d-flex justify-content-center">
+        <div class="table-responsive">
+            <ul style="list-style-type: none; padding: 0;" id="messagesList">
+                <!-- Header Row -->
+                <li style="display: flex; font-weight: bold; border-bottom: 1px solid #ddd; padding: 8px 0;">
+                    <span style="flex: 1;">#</span>
+                    <span style="flex: 3;">Query</span>
+                    <span style="flex: 3;">Started</span>
+                    <span style="flex: 2;">Duration</span>
+                    <span style="flex: 3;">Resulted Link</span>
+                </li>
+
+                <!-- Data Rows -->
+                @for (int i = 0; i < Model.Count(); i++)
+                {
+                    <li style="display: flex; border-bottom: 1px solid #ddd; padding: 8px 0;">
+                        <span style="flex: 1;">@(i + 1)</span>
+                        <span style="flex: 3;">@Model.ElementAt(i).Query</span>
+                        <span style="flex: 3;">@Model.ElementAt(i).Started</span>
+                        <span style="flex: 2;">@Model.ElementAt(i).Duration</span>
+                        <span style="flex: 3;">@Model.ElementAt(i).ResultedLink</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
