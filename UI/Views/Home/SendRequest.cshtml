@@ -1,0 +1,16 @@
+﻿@{
+    ViewData["Title"] = "Send request";
+}
+<h1>@ViewData["Title"]</h1>
+
+<h4>Please enter your query</h4>
+@using (@Html.BeginForm(FormMethod.Post))
+{
+    @Html.TextBox("query")
+    <input type="submit" value="Send" />
+    @if (ViewBag.Message != null)
+    {
+        @Html.Label("message", ViewBag.Message, new { style = "color:green"})
+    }
+}
+

@@ -1,0 +1,75 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34902.65
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UI", "UI\UI.csproj", "{528204B7-13EE-4F15-8BFA-6CECD7294367}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "API", "API\API.csproj", "{F81E6842-9FDB-4AC6-B58C-3BC2939B3FE9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BackgroundWorker", "BackgroundWorker\BackgroundWorker.csproj", "{E74F7ECE-8AC9-4B47-9D4E-5ECC55AC0859}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceBusUtils", "ServiceBusUtils\ServiceBusUtils.csproj", "{5241475E-E8B5-48E2-A954-121D77CADC8F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Models", "Models\Models.csproj", "{D66E828A-371A-479A-8F77-F5548282A9EE}"
+EndProject
+
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ArmTemplates", "ArmTemplates", "{975DBBD6-5347-4668-8C32-E7CF4ACFB4FA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "serviceBus", "serviceBus", "{CEA42999-4716-4904-B434-07D298645794}"
+	ProjectSection(SolutionItems) = preProject
+		DeploymentTemplates\serviceBus\parameters.json = DeploymentTemplates\serviceBus\parameters.json
+		DeploymentTemplates\serviceBus\template.json = DeploymentTemplates\serviceBus\template.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "webApi", "webApi", "{DADE5DA6-B7A4-48E2-B4CA-21B223CA8FB9}"
+	ProjectSection(SolutionItems) = preProject
+		DeploymentTemplates\webApi\parameters.json = DeploymentTemplates\webApi\parameters.json
+		DeploymentTemplates\webApi\template.json = DeploymentTemplates\webApi\template.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blob", "blob", "{F3288660-06A3-4AC2-A3C0-B5740CCBACB7}"
+	ProjectSection(SolutionItems) = preProject
+		DeploymentTemplates\blob\parameters.json = DeploymentTemplates\blob\parameters.json
+		DeploymentTemplates\blob\template.json = DeploymentTemplates\blob\template.json
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{528204B7-13EE-4F15-8BFA-6CECD7294367}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{528204B7-13EE-4F15-8BFA-6CECD7294367}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{528204B7-13EE-4F15-8BFA-6CECD7294367}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{528204B7-13EE-4F15-8BFA-6CECD7294367}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F81E6842-9FDB-4AC6-B58C-3BC2939B3FE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F81E6842-9FDB-4AC6-B58C-3BC2939B3FE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F81E6842-9FDB-4AC6-B58C-3BC2939B3FE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F81E6842-9FDB-4AC6-B58C-3BC2939B3FE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E74F7ECE-8AC9-4B47-9D4E-5ECC55AC0859}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E74F7ECE-8AC9-4B47-9D4E-5ECC55AC0859}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E74F7ECE-8AC9-4B47-9D4E-5ECC55AC0859}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E74F7ECE-8AC9-4B47-9D4E-5ECC55AC0859}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5241475E-E8B5-48E2-A954-121D77CADC8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5241475E-E8B5-48E2-A954-121D77CADC8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5241475E-E8B5-48E2-A954-121D77CADC8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5241475E-E8B5-48E2-A954-121D77CADC8F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D66E828A-371A-479A-8F77-F5548282A9EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D66E828A-371A-479A-8F77-F5548282A9EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D66E828A-371A-479A-8F77-F5548282A9EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D66E828A-371A-479A-8F77-F5548282A9EE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CEA42999-4716-4904-B434-07D298645794} = {975DBBD6-5347-4668-8C32-E7CF4ACFB4FA}
+		{DADE5DA6-B7A4-48E2-B4CA-21B223CA8FB9} = {975DBBD6-5347-4668-8C32-E7CF4ACFB4FA}
+		{F3288660-06A3-4AC2-A3C0-B5740CCBACB7} = {975DBBD6-5347-4668-8C32-E7CF4ACFB4FA}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4FAA98C1-D611-488F-89D7-BF6CB86E3ACA}
+	EndGlobalSection
+EndGlobal

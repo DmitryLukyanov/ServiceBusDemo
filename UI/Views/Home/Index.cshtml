@@ -1,0 +1,123 @@
+﻿@using Models
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+@model IEnumerable<HistoryModel>
+
+@* Workaround, reimplement *@
+<style>
+    table {
+        width: 50%;
+        border-collapse: collapse;
+        margin: 20px auto;
+    }
+
+    table, th, td {
+        border: 1px solid black;
+    }
+
+    th, td {
+        padding: 10px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    #popup {
+        display: none;
+        position: fixed;
+        top: 90%;
+        left: 90%;
+        transform: translate(-50%, -50%);
+        padding: 10px;
+        background-color: #f8d7da;
+        border: 1px solid black;
+        color: #721c24;
+        font-size: 8px;
+        box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+        border-radius: 2px;
+        z-index: 1000;
+    }
+</style>
+
+<script>
+    function showPopup(query, resultedLink) {
+        const popup = document.getElementById('popup');
+        popup.style.display = 'block';
+        if (resultedLink) {
+            popup.innerHTML = '<h3>See link <a href="' + resultedLink + '">Download</a></h3>';
+        }
+        else {
+            popup.innerHTML = '<h3>Query is in progress..</h3>';
+        }
+        setTimeout(() => {
+            popup.style.display = 'none';
+        }, 5000);
+    }
+</script>
+
+<div class="text-center">
+    @Html.Hidden(
+            nameof(UI.Settings.SignalRSettings.SignalRHostAddress),
+            ((@HttpContextAccessor?.HttpContext?.Request.Cookies.TryGetValue(
+            nameof(UI.Settings.SignalRSettings.SignalRHostAddress), out var hostAddress) ?? false)
+            ? hostAddress
+            : null))
+    <h1 class="display-4">Operations history</h1>
+    <div id="popup"><h3>You're received notification!</h3></div>
+
+    <div class="justify-content-center">
+        <div>
+            <table style="list-style-type: none; padding: 0" id="messagesList">
+                <!-- Header Row -->
+                <tr>
+                    <th>#</th>
+                    <th>Query</th>
+                    <th>Started</th>
+                    <th>Completed</th>
+                    <th>Duration</th>
+                    <th>Link</th>
+                    <th>Open</th>
+                    <th>UserName</th>
+                </tr>
+
+                <!-- Data Rows -->
+                @for (int i = 0; i < Model.Count(); i++)
+                {
+                    <tr id="@Model.ElementAt(i).Id">
+                        <td>@(i + 1)</td>
+                        <td>@Model.ElementAt(i).Query</td>
+                        <td>@Model.ElementAt(i).Created</td>
+                        <td>@Model.ElementAt(i).Completed</td>
+                        <td>@Model.ElementAt(i).Duration</td>
+                        <td>
+                            @if (@Model.ElementAt(i).ResultLink != null)
+                            {
+                                <a href="@Model.ElementAt(i).ResultLink">Download</a>
+                            }
+                            else
+                            {
+                                <p>In progress</p>
+                            }
+                        </td>
+                        <td>
+                            @if (@Model.ElementAt(i).ResultLink != null)
+                            {
+                                <a href="Home/OpenFile?url=@Model.ElementAt(i).ResultLink">Open</a>
+                            }
+                            else
+                            {
+                                <p>In progress</p>
+                            }
+                        </td>
+                        <td>@Model.ElementAt(i).UserName</td>
+                    </tr>
+                }
+            </table>
+        </div>
+    </div>
+</div>
