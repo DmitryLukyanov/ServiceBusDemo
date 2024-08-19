@@ -7,6 +7,7 @@ using BackgroundWorker.SignalR;
 using BackgroundWorker.Utils;
 using Microsoft.AspNetCore.SignalR;
 using ServiceBusUtils;
+using System.Globalization;
 using System.Text.Json;
 
 namespace BackgroundWorker.HostedServices
@@ -62,9 +63,10 @@ namespace BackgroundWorker.HostedServices
 
         private async Task<(Dictionary<string, object>? ModifiedProperties, bool Success)> ReceivedMessageFunc(ProcessMessageEventArgs args)
         {
-            // TODO: simplify everything
             const string ResultedLinkKey = "ResultedLink";
             const string SavedToHistoryKey = "SavedToHistory";
+            var now = DateTime.UtcNow;
+            var applicationProperties = args.Message.ApplicationProperties;
 
             _logger.LogInformation($"The message ({args.Identifier}) with content ({args.Message}) has been received.");
 
@@ -89,66 +91,16 @@ namespace BackgroundWorker.HostedServices
                 throw;
             }
 
-            Uri? resultedLink = null;
-            if (args.Message.ApplicationProperties.TryGetValue(ResultedLinkKey, out var resultedLinkObj) &&
-                resultedLinkObj != null)
-            {
-                resultedLink = new Uri(resultedLinkObj.ToString()!);
-            }
-            else
+            if (!TryGetValueFromAplicationProperties( // TODO: can metadata expire?
+                    applicationProperties, 
+                    key: ResultedLinkKey, 
+                    valueFactory: (str) => new Uri(str)!, 
+                    out var resultedLink))
             {
                 try
                 {
                     // 2. save to blob
-
-                    // TODO: choose much better key than query, consider generating some hash or guid
-                    var blob = _blobContainer.GetBlobClient(message.NormalizedQuery.ToString());
-                    if (await blob.ExistsAsync(_mainCancellationToken))
-                    {
-                        var properties = await blob.GetPropertiesAsync(
-                            // TODO: enable filtering
-                            // conditions: new BlobRequestConditions(), 
-                            cancellationToken: _mainCancellationToken);
-                        if (!properties.Value.Metadata.TryGetValue(_backgroundWorkerSettings.BlobCacheMetadataKey, out var expirationDate))
-                        {
-                            throw new InvalidOperationException("TODO: must not happen. Add better handling.");
-                        }
-                        if (DateTime.Parse(expirationDate) > DateTime.UtcNow)
-                        {
-                            resultedLink = blob.Uri;
-                        }
-                    }
-
-                    if (resultedLink == null)
-                    {
-                        using var writeToMemoryStream = new MemoryStream();
-                        await JsonSerializer.SerializeAsync<dynamic>(
-                            utf8Json: writeToMemoryStream,
-                            longRunningOperationResult,
-                            cancellationToken: _mainCancellationToken);
-                        writeToMemoryStream.Position = 0; // put cursor to the start of the stream
-
-                        var blobResult = await blob.UploadAsync(
-                            content: writeToMemoryStream,
-                            options: new BlobUploadOptions
-                            {
-                                HttpHeaders = new BlobHttpHeaders
-                                {
-                                    ContentType = "application/json",
-                                    // Investigate exact behavior
-                                    // CacheControl = $"max-age={TimeSpan.FromDays(_backgroundWorkerSettings.BlobCacheValidDays).TotalSeconds}"
-                                },
-                                Metadata = new Dictionary<string, string>
-                                {
-                                    {
-                                        _backgroundWorkerSettings.BlobCacheMetadataKey,
-                                        DateTime.UtcNow.AddDays(_backgroundWorkerSettings.BlobCacheValidDays).ToString()
-                                    }
-                                }
-                            },
-                            _mainCancellationToken);
-                    }
-                    resultedLink = blob.Uri;
+                    resultedLink = await GetOrAddFileToBlobAsync(_blobContainer, message, longRunningOperationResult, _backgroundWorkerSettings, _mainCancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -160,32 +112,34 @@ namespace BackgroundWorker.HostedServices
                 }
             }
 
-            var now = DateTime.UtcNow;
-            // TODO: Check status of SavedToHistoryKey
-            try
+            if (!TryGetValueFromAplicationProperties( // TODO: can metadata expire?
+                applicationProperties,
+                key: SavedToHistoryKey,
+                valueFactory: (str) => DateTime.Parse(str)!,
+                out var savedToHistoryAt))
             {
-                // 3. save history
-                await historyRepository.CreateHistoryRecordAsync(
-                    [
-                        new HistoryModel(
+                try
+                {
+                    // 3. save history
+                    await historyRepository.CreateHistoryRecordAsync(
+                        histories: [
+                            new HistoryModel(
                             id: Guid.NewGuid(),
                             message.Query,
                             now,
                             resultedLink)
-                    ],
-                    _mainCancellationToken);
-            }
-            catch (Exception ex)
-            {
-                var modifiedProperties = new Dictionary<string, object>(args.Message.ApplicationProperties);
-                if (!modifiedProperties.TryAdd(ResultedLinkKey, resultedLink))
-                {
-                    // TODO: ?
+                        ],
+                        cancellationToken: _mainCancellationToken);
                 }
+                catch (Exception ex)
+                {
+                    var modifiedProperties = new Dictionary<string, object>(applicationProperties);
+                    modifiedProperties.AddOrUpdate(ResultedLinkKey, resultedLink!);
 
-                _logger.LogError(ex, "Saving history has been failed.");
-                return (modifiedProperties, false);
-                // Log and ignore it for now, let signal r try to propagate the result
+                    _logger.LogError(ex, "Saving history has been failed.");
+                    return (modifiedProperties, false);
+                    // Log and ignore it for now, let signal r try to propagate the result
+                }
             }
 
             // 4. notify signalr
@@ -204,7 +158,7 @@ namespace BackgroundWorker.HostedServices
             catch (Exception ex)
             {
                 var modifiedProperties = new Dictionary<string, object>(args.Message.ApplicationProperties);
-                modifiedProperties.TryAdd(SavedToHistoryKey, now);
+                modifiedProperties.AddOrUpdate(SavedToHistoryKey, now);
 
                 _logger.LogError(ex, "SignalR sending has been failed.");
                 return (modifiedProperties, false);
@@ -212,6 +166,79 @@ namespace BackgroundWorker.HostedServices
 
             _logger.LogInformation($"The message ({args.Identifier}) with content ({args.Message}) has been processed.");
             return (null, true);
+
+            static async Task<Uri?> GetOrAddFileToBlobAsync(
+                BlobContainerClient blobContainer,
+                LongRunningOperationRequestModel message,
+                IEnumerable<dynamic> longRunningOperationResult,
+                BackgroundWorkerSettings backgroundWorkerSettings,
+                CancellationToken cancellationToken)
+            {
+                // TODO: choose much better key than query, consider generating some hash or guid
+                var blob = blobContainer.GetBlobClient(message.NormalizedQuery.ToString());
+                if (await blob.ExistsAsync(cancellationToken))
+                {
+                    var properties = await blob.GetPropertiesAsync(
+                        // TODO: enable filtering
+                        // conditions: new BlobRequestConditions(), 
+                        cancellationToken: cancellationToken);
+                    if (!properties.Value.Metadata.TryGetValue(backgroundWorkerSettings.BlobCacheMetadataKey, out var expirationDate))
+                    {
+                        // we're here only if saving to blob was without filled metadata
+                        throw new InvalidOperationException("TODO: must not happen. Add better handling.");
+                    }
+                    if (DateTime.Parse(expirationDate, CultureInfo.InvariantCulture) > DateTime.UtcNow)
+                    {
+                        return blob.Uri;
+                    }
+                }
+
+                using var writeToMemoryStream = new MemoryStream();
+                await JsonSerializer.SerializeAsync<dynamic>(
+                    utf8Json: writeToMemoryStream,
+                    longRunningOperationResult,
+                    cancellationToken: cancellationToken);
+                writeToMemoryStream.Position = 0; // put cursor to the start of the stream
+
+                var blobResult = await blob.UploadAsync(
+                    content: writeToMemoryStream,
+                    options: new BlobUploadOptions
+                    {
+                        HttpHeaders = new BlobHttpHeaders
+                        {
+                            ContentType = "application/json",
+                            // Investigate exact behavior
+                            // CacheControl = $"max-age={TimeSpan.FromDays(_backgroundWorkerSettings.BlobCacheValidDays).TotalSeconds}"
+                        },
+                        Metadata = new Dictionary<string, string>
+                        {
+                            {
+                                backgroundWorkerSettings.BlobCacheMetadataKey,
+                                DateTime.UtcNow.AddDays(backgroundWorkerSettings.BlobCacheValidDays).ToString(CultureInfo.InvariantCulture)
+                            }
+                        }
+                    },
+                    cancellationToken);
+
+                return blob.Uri;
+            }
+
+            static bool TryGetValueFromAplicationProperties<TValue>(
+                IReadOnlyDictionary<string, object> properties, 
+                string key, 
+                Func<string, TValue> valueFactory,
+                out TValue? value)
+            {
+                value = default;
+
+                if (properties.TryGetValue(key, out var resultedLinkObj) &&
+                    resultedLinkObj != null)
+                {
+                    value = (valueFactory ?? throw new ArgumentNullException(nameof(valueFactory)))(resultedLinkObj.ToString()!);
+                    return true;
+                }
+                return false;
+            }
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
