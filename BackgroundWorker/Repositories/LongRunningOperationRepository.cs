@@ -22,7 +22,6 @@ namespace BackgroundWorker.Repositories
             // NOTE: use Ado.NET since EF supports arbitrary query,
             // but doesn't support arbitrary return type
 
-            // query = "SELECT * FROM History";
             await using var sqlConnection = new SqlConnection(_backgroundWorkerSettings.CoreConnectionString);
             await using var sqlCommand = new SqlCommand(query, sqlConnection);
             await sqlConnection.OpenAsync(cancellationToken);
@@ -33,10 +32,14 @@ namespace BackgroundWorker.Repositories
             {
                 await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken); // emulate long running call
             }
-            // TODO: return =>
-            //  Row 0: Columns
-            //  Row 1 - N: Rows
-            return dataTable.AsEnumerable();
+
+            return Enumerable.Concat<dynamic>(
+                new[] { dataTable.Columns.OfType<DataColumn>().Select(i => i.ColumnName).ToArray() },
+                dataTable
+                    .Rows
+                    .OfType<DataRow>()
+                    .Select(i => i.ItemArray)
+                    .ToArray());
         }
     }
 
