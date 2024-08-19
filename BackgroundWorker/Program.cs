@@ -31,6 +31,15 @@ builder.Services.AddSignalR();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(option =>
+{
+    option.AddPolicy(name: "CorsOrigins", policy =>
+    {
+        policy.WithOrigins("https://localhost:53630")
+        .WithHeaders("x-requested-with", "x-signalr-user-agent")
+        .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
@@ -46,7 +55,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
-
+app.UseCors("CorsOrigins");
 app.MapHub<NotificationHub>("/NotificationHub");
 
 app.Run();
