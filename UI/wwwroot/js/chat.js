@@ -7,19 +7,21 @@ try {
         .withAutomaticReconnect()
         .build();
 
-    connection.on("OnOperationComplited", function (index, query, createdAt, resulteUrl) {
-        var li = document.createElement("li");
+    connection.on("OnOperationComplited", function (index, query, createdAt, resultedUrl, duration, completedAt, userName) {
+        var li = document.createElement("tr");
         var messagelist = document.getElementById("messagesList");
-        // We can assign user-supplied strings to an element's textContent because it
-        // is not interpreted as markup. If you're assigning in any other way, you
-        // should be aware of possible script injection concerns.
-        var elementindex = messagelist.children.length;
-        var lielement = ' <span style="flex: 1;">' + elementindex + '</span>'
-        lielement += ' <span style="flex: 3;">' + query + '</span>'
-        lielement += ' <span style="flex: 3;">' + createdAt + '</span>'
-        lielement += ' <span style="flex: 3;">' + createdAt + '</span>'
-        lielement += ' <span style="flex: 2;">' + resulteUrl + '</span>';
-        li.style = "display: flex; border - bottom: 1px solid #ddd; padding: 8px 0;";
+
+        // TODO: do not add row if it's already there!
+        var elementindex = messagelist.rows.length;
+        var lielement = ' <td>' + elementindex + '</td>';
+        lielement += ' <td>' + query + '</td>';
+        lielement += ' <td>' + new Date(createdAt).toLocaleString("en-US") + '</td>';
+        lielement += ' <td>' + new Date(completedAt).toLocaleString("en-US") + '</td>';
+        lielement += ' <td>' + duration + '</td>';
+        lielement += ' <td><a href="' + resultedUrl + '">Download</a></td>';
+        lielement += ' <td><a href=Home/OpenFile?url=' + resultedUrl + '>Open</a></td>';
+        lielement += ' <td>' + userName + '</td>';
+        li.style = "background-color: lightgreen;";
         li.innerHTML = lielement;
         messagelist.appendChild(li);
     });

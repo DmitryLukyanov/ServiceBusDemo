@@ -26,16 +26,21 @@ namespace BackgroundWorker.SignalR
             object? arg2,
             object? arg3,
             object? arg4,
+            object? arg5,
+            object? arg6,
             CancellationToken cancellationToken)
         {
-            var userGroupName = CreateUserGroupName(userName ?? UnauthorizedUserName);
-            var group = _notificationHub.Clients.Group(userGroupName);
-            await group.SendAsync(
+            //var userGroupName = CreateUserGroupName(userName ?? UnauthorizedUserName);
+            //var group = _notificationHub.Clients.Group(userGroupName);
+            await _notificationHub.Clients.All.SendAsync(
                 method: javascriptMethodName,
                 arg1: arg1,
                 arg2: arg2,
                 arg3: arg3,
                 arg4: arg4,
+                arg5: arg5,
+                arg6: arg6,
+                userName,
                 cancellationToken: cancellationToken);
         }
 

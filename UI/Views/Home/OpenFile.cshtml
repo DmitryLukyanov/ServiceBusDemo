@@ -1,0 +1,55 @@
+﻿@{
+    var array = Model;
+    int rowsCount = array.GetLength(0);
+    int columnsCount = array.GetLength(1);
+}
+
+@* Workaround, reimplement *@
+<style>
+    table {
+        width: 50%;
+        border-collapse: collapse;
+        margin: 20px auto;
+    }
+
+    table, th, td {
+        border: 1px solid black;
+    }
+
+    th, td {
+        padding: 10px;
+        text-align: center;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+</style>
+
+<div class="text-center">
+    <div class="justify-content-center">
+        <div>
+            <table style="list-style-type: none; padding: 0">
+                <thead>
+                    <tr>
+                        @for (int col = 0; col < columnsCount; col++)
+                        {
+                            <th>@array[0, col]</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int row = 1; row < rowsCount; row++)
+                    {
+                        <tr>
+                            @for (int column = 0; column < columnsCount; column++)
+                            {
+                                <td>@array[row, column]</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -26,6 +26,7 @@ namespace API.Data
             modelBuilder.Entity<HistoryModel>().Property(c => c.ResultLink);
             modelBuilder.Entity<HistoryModel>().Property(c => c.UserName);
             modelBuilder.Entity<HistoryModel>().Property(c => c.Duration);
+            modelBuilder.Entity<HistoryModel>().Property(c => c.Completed);
 
             modelBuilder.Entity<LongRunningOperationModel>().HasKey(c => c.Id);
         }

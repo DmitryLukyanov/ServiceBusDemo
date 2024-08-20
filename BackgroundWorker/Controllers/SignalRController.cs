@@ -6,7 +6,10 @@ namespace BackgroundWorker.Controllers
 {
     public class SignalRController(IHubContext<NotificationHub> _notificationHub, ILogger<SignalRController> _logger) : ControllerBase
     {
-        [HttpPost("GenerateMessage")]
+        // POC related
+        private const string NoImagePictureLink = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR1ayLa8IDnr7QM3REMYlfPL0uDLWjrAt3eKw&s";
+
+        [HttpPost("GenerateNotificationMessage")]
         public async Task PostMessage()
         {
             _logger.LogInformation("Sending message to SignalR");
@@ -17,7 +20,8 @@ namespace BackgroundWorker.Controllers
                 arg1: Guid.NewGuid(), // TODO: review logic
                 arg2: "SELECT 1",
                 arg3: DateTime.UtcNow,
-                arg4: "www.resultedlink.com",
+                arg4: NoImagePictureLink,
+                arg5: TimeSpan.FromSeconds(2),
                 cancellationToken: CancellationToken.None);
 
             _logger.LogInformation("The message to SignalR has been sent");

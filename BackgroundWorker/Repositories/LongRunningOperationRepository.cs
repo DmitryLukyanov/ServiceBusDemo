@@ -30,7 +30,8 @@ namespace BackgroundWorker.Repositories
             sqlDataAdapter.Fill(dataTable);
             if (longRunning)
             {
-                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken); // emulate long running call
+                var randomDelay = new Random().Next(5, 15);
+                await Task.Delay(TimeSpan.FromSeconds(randomDelay), cancellationToken); // emulate long running call
             }
 
             return Enumerable.Concat<dynamic>(

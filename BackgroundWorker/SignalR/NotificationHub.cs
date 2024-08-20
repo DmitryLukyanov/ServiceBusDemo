@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using System.Threading;
 
 namespace BackgroundWorker.SignalR
 {
@@ -6,9 +7,14 @@ namespace BackgroundWorker.SignalR
     {
         public override async Task OnConnectedAsync()
         {
-            await SignalRUtils.ConfigureOnConnectedAsync(this);
+            var userName = Context!.User!.Identity!.Name ?? "Empty";
+
+            var userGroupName = CreateUserGroupName(userName);
+            await Groups.AddToGroupAsync(Context.ConnectionId, userGroupName);
 
             await base.OnConnectedAsync();
         }
+
+        private static string CreateUserGroupName(string userName) => $"user_{userName}";
     }
 }
