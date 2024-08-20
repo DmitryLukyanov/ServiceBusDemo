@@ -1,56 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace BackgroundWorker.Data
 {
-    public sealed class HistoryModel
-    {
-        public HistoryModel(Guid id, string query, DateTime created) : this(id, query, created, null)
-        {
-        }
-
-        public HistoryModel(Guid id, string query, DateTime created, Uri? resultedLink)
-        {
-            Id = id;
-            Query = query ?? throw new ArgumentNullException(nameof(query));
-            Created = created;
-            ResultLink = resultedLink; // can be null
-        }
-
-        public Guid Id { get; }
-        public DateTime Created { get; }
-        public string Query { get; }
-        public Uri? ResultLink { get; }
-    }
-
-    public sealed class LongRunningOperationRequestModel(int id, string query, DateTime created)
-    {
-        private static string NormalizeQuery(string query) => query
-            .Trim()
-            .Replace(Environment.NewLine, " ")
-            .Replace('\t', ' ')
-            .Replace('\n', ' ')
-            .Replace("  ", " ")
-            .ToLowerInvariant();
-
-        public int Id => id;
-        public DateTime Created => created;
-        /// <summary>
-        /// Used as a key. TODO: think about better apporach
-        /// </summary>
-        public string NormalizedQuery => NormalizeQuery(query);
-        public string Query => query;
-    }
-
-    public sealed class LongRunningOperationResponseModel(LongRunningOperationRequestModel request, IEnumerable<dynamic> queryResult)
-    {
-        public LongRunningOperationRequestModel Request => request;
-        public IEnumerable<dynamic> QueryResult => queryResult ?? throw new ArgumentNullException(nameof(queryResult));
-    }
-
     public class CoreDbContext(CoreDbSettings _settings) : DbContext
     {
         public DbSet<HistoryModel> History { get; set; }
-        public DbSet<LongRunningOperationRequestModel> LongRunningOperation { get; set; }
+        public DbSet<LongRunningOperationModel> LongRunningOperation { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -68,10 +24,10 @@ namespace BackgroundWorker.Data
             modelBuilder.Entity<HistoryModel>().Property(c => c.Query);
             modelBuilder.Entity<HistoryModel>().Property(c => c.Created);
             modelBuilder.Entity<HistoryModel>().Property(c => c.ResultLink);
+            modelBuilder.Entity<HistoryModel>().Property(c => c.UserName);
+            modelBuilder.Entity<HistoryModel>().Property(c => c.Duration);
 
-            modelBuilder.Entity<LongRunningOperationRequestModel>().HasKey(c => c.Id);
-            modelBuilder.Entity<LongRunningOperationRequestModel>().Property(c => c.Query);
-            modelBuilder.Entity<LongRunningOperationRequestModel>().Property(c => c.Created);
+            modelBuilder.Entity<LongRunningOperationModel>().HasKey(c => c.Id);
         }
     }
 }

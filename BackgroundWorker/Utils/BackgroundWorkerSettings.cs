@@ -1,7 +1,8 @@
 ﻿namespace BackgroundWorker.Utils
 {
-    public class BackgroundWorkerSettings(IConfiguration configuration) // TODO: null reference check
+    public class BackgroundWorkerSettings(IConfiguration configuration)
     {
+        public string AllowedProductionOrigins => configuration.GetValue<string>(nameof(AllowedProductionOrigins)) ?? throw new ArgumentNullException(nameof(AllowedProductionOrigins));
         public int NumberOfHandlers => configuration.GetValue<int?>(nameof(NumberOfHandlers)) ?? throw new ArgumentNullException(nameof(NumberOfHandlers));
         /// <summary>
         /// TODO: use more secure. See for details: https://learn.microsoft.com/en-us/azure/cosmos-db/secure-access-to-data?tabs=using-primary-key

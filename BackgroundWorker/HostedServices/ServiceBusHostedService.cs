@@ -1,14 +1,14 @@
 ﻿using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using BackgroundWorker.Data;
+using Models;
 using BackgroundWorker.Repositories;
 using BackgroundWorker.SignalR;
 using BackgroundWorker.Utils;
-using Microsoft.AspNetCore.SignalR;
 using ServiceBusUtils;
 using System.Globalization;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace BackgroundWorker.HostedServices
 {
@@ -20,7 +20,7 @@ namespace BackgroundWorker.HostedServices
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly ILogger<ServiceBusHostedService> _logger;
         private readonly CancellationToken _mainCancellationToken;
-        private readonly IHubContext<NotificationHub> _notificationHub;
+        private readonly SignalRUtils _notificationHub;
         private readonly ServiceBusConsumer _serviceBusConsumer;
         private readonly IServiceBusSettings _serviceBusSettings;
         private readonly IServiceScopeFactory _serviceScopeFactory;
@@ -31,7 +31,7 @@ namespace BackgroundWorker.HostedServices
             ILogger<ServiceBusHostedService> logger,
             BackgroundWorkerSettings backgroundWorkerSettings,
             BlobServiceClient blobServiceClient,
-            IHubContext<NotificationHub> notificationHub)
+            SignalRUtils notificationHub)
         {
             _notificationHub = notificationHub;
             _backgroundWorkerSettings = backgroundWorkerSettings;
@@ -78,6 +78,7 @@ namespace BackgroundWorker.HostedServices
             var longRunningOperationRepository = scope.ServiceProvider.GetRequiredService<ILongRunningOperationRepository>();
             var historyRepository = scope.ServiceProvider.GetRequiredService<IHistoryRepository>();
             IEnumerable<dynamic> longRunningOperationResult;
+            var stopWatch = Stopwatch.StartNew();
 
             try
             {
@@ -89,6 +90,10 @@ namespace BackgroundWorker.HostedServices
                 // no need to save anything at this point
                 _logger.LogError(ex, "Long running operation has been failed.");
                 throw;
+            }
+            finally 
+            {
+                stopWatch.Stop();
             }
 
             if (!TryGetValueFromAplicationProperties( // TODO: can metadata expire?
@@ -127,7 +132,9 @@ namespace BackgroundWorker.HostedServices
                             id: Guid.NewGuid(),
                             message.Query,
                             now,
-                            resultedLink)
+                            resultedLink,
+                            message.UserName,
+                            stopWatch.Elapsed)
                         ],
                         cancellationToken: _mainCancellationToken);
                 }
@@ -138,7 +145,6 @@ namespace BackgroundWorker.HostedServices
 
                     _logger.LogError(ex, "Saving history has been failed.");
                     return (modifiedProperties, false);
-                    // Log and ignore it for now, let signal r try to propagate the result
                 }
             }
 
@@ -146,8 +152,9 @@ namespace BackgroundWorker.HostedServices
             try
             {
                 // TODO: use particular client isntead All
-                await _notificationHub.Clients.All.SendAsync(
-                    method: "OnOperationComplited",
+                await _notificationHub.SendAsync(
+                    javascriptMethodName: "OnOperationComplited",
+                    userName: message.UserName,
                     //index, query, createdAt, resulteUrl
                     arg1: Guid.NewGuid(), // TODO: review logic
                     arg2: message.Query,

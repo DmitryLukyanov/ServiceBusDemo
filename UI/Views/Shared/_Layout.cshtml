@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@inject IHttpContextAccessor HttpContextAccessor
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -32,6 +34,13 @@
     </header>
     <div class="container">
         <main role="main" class="pb-3">
+            @* Move this hidden value only to the page when it's needed *@
+            @Html.Hidden(
+                nameof(UI.Settings.SignalRSettings.SignalRHostAddress), 
+                ((@HttpContextAccessor?.HttpContext?.Request.Cookies.TryGetValue(
+                    nameof(UI.Settings.SignalRSettings.SignalRHostAddress), out var hostAddress) ?? false) 
+                    ? hostAddress 
+                    : null))
             @RenderBody()
         </main>
     </div>

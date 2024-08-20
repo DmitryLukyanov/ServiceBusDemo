@@ -1,7 +1,13 @@
+using UI.Middlewares;
+using UI.Settings;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddSingleton<SignalRSettings>();
+builder.Services.AddTransient<SetConfigurationToCookiesMiddleware>();
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 var app = builder.Build();
 
@@ -13,6 +19,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+app.UseMiddleware<SetConfigurationToCookiesMiddleware>();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 

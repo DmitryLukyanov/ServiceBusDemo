@@ -27,18 +27,31 @@ builder.Services.AddAzureClients(clientBuilder =>
         ;
 });
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<SignalRUtils>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddCors(option =>
+builder.Services.AddCors(options =>
 {
-    option.AddPolicy(name: "CorsOrigins", policy =>
+    if (builder.Environment.IsDevelopment())
     {
-        policy.WithOrigins("https://localhost:53630")
-        .WithHeaders("x-requested-with", "x-signalr-user-agent")
-        .AllowCredentials();
-    });
+        options.AddPolicy(name: "CorsSignalr", policyBuilder =>
+            policyBuilder
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials()
+                .SetIsOriginAllowed(hostName => true));
+    }
+    else
+    {
+        var backgroundWorkerSettings = new BackgroundWorkerSettings(builder.Configuration); // TODO: resolve via DI?
+        options.AddPolicy(name: "CorsSignalr", policyBuilder =>
+            policyBuilder
+                .WithOrigins(backgroundWorkerSettings.AllowedProductionOrigins.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                .WithHeaders("x-requested-with", "x-signalr-user-agent")
+                .AllowCredentials());
+    }
 });
 
 var app = builder.Build();
@@ -55,7 +68,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
-app.UseCors("CorsOrigins");
+app.UseCors("CorsSignalr");
 app.MapHub<NotificationHub>("/NotificationHub");
 
 app.Run();

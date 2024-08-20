@@ -1,4 +1,5 @@
 ﻿using BackgroundWorker.Data;
+using Models;
 
 namespace BackgroundWorker.Repositories
 {
