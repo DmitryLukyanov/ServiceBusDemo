@@ -2,8 +2,10 @@
 
 namespace UI.Middlewares
 {
-    public sealed class SetConfigurationToCookiesMiddleware(SignalRSettings _signalRSettings) : IMiddleware
+    public sealed class SetConfigurationToCookiesMiddleware(SignalRSettings signalRSettings) : IMiddleware
     {
+        private readonly SignalRSettings _signalRSettings = signalRSettings;
+
         public Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
             if (!context.Request.Cookies.ContainsKey(nameof(SignalRSettings.SignalRHostAddress)))

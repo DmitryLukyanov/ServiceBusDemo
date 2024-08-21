@@ -7,23 +7,51 @@ try {
         .withAutomaticReconnect()
         .build();
 
-    connection.on("OnOperationComplited", function (index, query, createdAt, resultedUrl, duration, completedAt, userName) {
-        var li = document.createElement("tr");
+    connection.on("OnOperationNotified", function (id, query, createdAt, resultedUrl, duration, completedAt, userName) {
+        console.log("Id:" + id + ", query:" + query + ", createdAt:" + createdAt + ", resultedUrl:" + resultedUrl + ", completedAt:" + completedAt);
+        var trElement = document.createElement("tr");
         var messagelist = document.getElementById("messagesList");
+        const inProgressMessage = "In progress";
 
-        // TODO: do not add row if it's already there!
-        var elementindex = messagelist.rows.length;
-        var lielement = ' <td>' + elementindex + '</td>';
-        lielement += ' <td>' + query + '</td>';
-        lielement += ' <td>' + new Date(createdAt).toLocaleString("en-US") + '</td>';
-        lielement += ' <td>' + new Date(completedAt).toLocaleString("en-US") + '</td>';
-        lielement += ' <td>' + duration + '</td>';
-        lielement += ' <td><a href="' + resultedUrl + '">Download</a></td>';
-        lielement += ' <td><a href=Home/OpenFile?url=' + resultedUrl + '>Open</a></td>';
-        lielement += ' <td>' + userName + '</td>';
-        li.style = "background-color: lightgreen;";
-        li.innerHTML = lielement;
-        messagelist.appendChild(li);
+        var existedTr = document.getElementById(id);
+        if (!existedTr) {
+            var elementindex = messagelist.rows.length;
+            var lielement = ' <td>' + elementindex + '</td>';
+            lielement += ' <td>' + query + '</td>';
+            lielement += ' <td>' + new Date(createdAt).toLocaleString("en-US") + '</td>';
+            lielement += ' <td>' + (completedAt ? new Date(completedAt).toLocaleString("en-US") : '') + '</td>';
+            lielement += ' <td>' + (duration ? duration : '') + '</td>';
+            lielement += ' <td><p>' + inProgressMessage +'</p></td>';
+            lielement += ' <td><p>' + inProgressMessage + '</td>';
+            lielement += ' <td>' + (userName ? userName : '') + '</td>';
+            trElement.style = "background-color: yellow;";
+            trElement.innerHTML = lielement;
+            trElement.id = id;
+            messagelist.appendChild(trElement);
+        }
+        else {
+            var children = existedTr.children;
+            // completed
+            if (children[3].innerText || children[3].innerText == '') {
+                children[3].innerText = completedAt;
+            }
+
+            // duration
+            if (children[4].innerText || children[4].innerText == '') {
+                children[4].innerText = duration;
+            }
+
+            // link
+            if (children[5].innerText == inProgressMessage) {
+                children[5].innerHTML = '<a href="' + resultedUrl + '">Download</a>';
+            }
+
+            // open
+            if (children[6].innerText == inProgressMessage) {
+                children[6].innerHTML = '<a href="Home/OpenFile?url=' + resultedUrl + '">Open</a>';
+            }
+            existedTr.style = "background-color: lightgreen;";
+        }
     });
 
     connection

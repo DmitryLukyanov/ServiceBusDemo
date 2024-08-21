@@ -7,9 +7,12 @@ namespace API.Controllers
     [ApiController]
     [Route("[controller]")]
     public class HistoryController(
-        IHistoryRepository _historyRepository,
-        ILogger<HistoryController> _logger) : ControllerBase
+        IHistoryRepository historyRepository,
+        ILogger<HistoryController> logger) : ControllerBase
     {
+        private readonly IHistoryRepository _historyRepository = historyRepository;
+        private readonly ILogger<HistoryController> _logger = logger;
+
         [HttpGet("GetHistory")]
         public async Task<IEnumerable<HistoryModel>> GetHistory(DateTime from)
         {

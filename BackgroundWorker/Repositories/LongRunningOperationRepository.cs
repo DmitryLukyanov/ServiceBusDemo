@@ -12,8 +12,10 @@ namespace BackgroundWorker.Repositories
             CancellationToken cancellationToken = default);
     }
 
-    public class LongRunningOperationRepository(CoreDbSettings _backgroundWorkerSettings) : ILongRunningOperationRepository
+    public class LongRunningOperationRepository(CoreDbSettings backgroundWorkerSettings) : ILongRunningOperationRepository
     {
+        private readonly CoreDbSettings _backgroundWorkerSettings = backgroundWorkerSettings;
+
         public async Task<IEnumerable<dynamic>> GetLongRunningOperationResultAsync(
             string query,
             bool longRunning = false,

@@ -96,9 +96,7 @@ namespace BackgroundWorker.HostedServices
                             historyId,
                             message.Query,
                             createdAt,
-                            message.UserName,
-                            duration: null,
-                            completed: null)
+                            message.UserName)
                     ]);
                     modifiedProperties.AddOrUpdate(HistoryIdKey, historyId);
                 }
@@ -111,25 +109,24 @@ namespace BackgroundWorker.HostedServices
 
             var started = DateTime.UtcNow;
             // 2. notify signalr
-            // UI: currently can't handle it and will recognize this message as a separate line
-            //try
-            //{
-            //    await _notificationHub.SendAsync(
-            //        javascriptMethodName: "OnOperationComplited",
-            //        userName: message.UserName,
-            //        arg1: message.Id,
-            //        arg2: message.Query,
-            //        arg3: started,
-            //        arg4: null,
-            //        arg5: null,
-            //        arg6: null,
-            //        cancellationToken: _mainCancellationToken);
-            //}
-            //catch (Exception ex)
-            //{
-            //    LogMessage("SignalR sending has been failed", ex);
-            //    // ignore it since it's minor intermediate notification
-            //}
+            try
+            {
+                await _notificationHub.SendAsync(
+                    javascriptMethodName: "OnOperationNotified",
+                    userName: message.UserName,
+                    arg1: historyId,
+                    arg2: message.Query,
+                    arg3: started,
+                    arg4: null,
+                    arg5: null,
+                    arg6: null,
+                    cancellationToken: _mainCancellationToken);
+            }
+            catch (Exception ex)
+            {
+                LogMessage("SignalR sending has been failed", ex);
+                // ignore it since it's minor intermediate notification
+            }
 
             IEnumerable<dynamic> longRunningOperationResult;
             var stopWatch = Stopwatch.StartNew();
@@ -182,11 +179,7 @@ namespace BackgroundWorker.HostedServices
             {
                 try
                 {
-                    // TODO: investigate why sometimes using historyRepository here fails and remove below 2 lines
-                    await using var scope2 = _serviceScopeFactory.CreateAsyncScope();
-                    var historyRepository2 = scope.ServiceProvider.GetRequiredService<IHistoryRepository>();
-
-                    await historyRepository2.UpdateHistoryRecordAsync(
+                    await historyRepository.UpdateHistoryRecordAsync(
                         historyId,
                         resultedLink!,
                         stopWatch.Elapsed,
@@ -205,10 +198,9 @@ namespace BackgroundWorker.HostedServices
             try
             {
                 await _notificationHub.SendAsync(
-                    javascriptMethodName: "OnOperationComplited",
+                    javascriptMethodName: "OnOperationNotified",
                     userName: message.UserName,
-                    //index, query, createdAt, resulteUrl
-                    arg1: message.Id,
+                    arg1: historyId,
                     arg2: message.Query,
                     arg3: started,
                     arg4: resultedLink,
@@ -233,6 +225,7 @@ namespace BackgroundWorker.HostedServices
                 CancellationToken cancellationToken)
             {
                 // TODO: choose much better key than query, consider generating some hash or guid
+                // TODO: add timeout for cache / TTL
                 var blob = blobContainer.GetBlobClient(message.NormalizedQuery.ToString());
                 if (await blob.ExistsAsync(cancellationToken))
                 {
@@ -265,7 +258,7 @@ namespace BackgroundWorker.HostedServices
                         HttpHeaders = new BlobHttpHeaders
                         {
                             ContentType = "application/json",
-                            // Investigate exact behavior
+                            // TODO: Investigate exact behavior
                             // CacheControl = $"max-age={TimeSpan.FromDays(_backgroundWorkerSettings.BlobCacheValidDays).TotalSeconds}"
                         },
                         Metadata = new Dictionary<string, string>

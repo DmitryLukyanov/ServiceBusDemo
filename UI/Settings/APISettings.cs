@@ -1,7 +1,8 @@
 ﻿namespace UI.Settings
 {
-    public sealed class APISettings(IConfiguration _configuration)
+    public sealed class APISettings(IConfiguration configuration)
     {
-        public string APIHostAddress => _configuration.GetValue<string>(nameof(APIHostAddress)) ?? throw new ArgumentNullException(nameof(APIHostAddress));
+        public string APIHostAddress => configuration.GetValue<string>(nameof(APIHostAddress)) ?? throw new ArgumentNullException(nameof(APIHostAddress));
+        public int APITimeoutSeconds => configuration.GetValue<int?>(nameof(APITimeoutSeconds)) ?? throw new ArgumentNullException(nameof(APITimeoutSeconds));
     }
 }

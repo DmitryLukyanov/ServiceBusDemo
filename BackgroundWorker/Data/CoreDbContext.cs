@@ -3,8 +3,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BackgroundWorker.Data
 {
-    public class CoreDbContext(CoreDbSettings _settings) : DbContext
+    public class CoreDbContext(CoreDbSettings settings) : DbContext
     {
+        private readonly CoreDbSettings _settings = settings;
+
         public DbSet<HistoryModel> History { get; set; }
         public DbSet<LongRunningOperationModel> LongRunningOperation { get; set; }
 

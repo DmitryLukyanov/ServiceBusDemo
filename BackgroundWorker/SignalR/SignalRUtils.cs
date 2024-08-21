@@ -2,9 +2,11 @@
 
 namespace BackgroundWorker.SignalR
 {
-    public class SignalRUtils(IHubContext<NotificationHub> _notificationHub)
+    public class SignalRUtils(IHubContext<NotificationHub> notificationHub)
     {
         private const string UnauthorizedUserName = "unauthorized"; // TODO: should not happen in real app, remove as soon as auth configured
+        
+        private readonly IHubContext<NotificationHub> _notificationHub = notificationHub;
 
         public static async Task ConfigureOnConnectedAsync(Hub hub, CancellationToken cancellationToken = default)
         {
@@ -30,8 +32,10 @@ namespace BackgroundWorker.SignalR
             object? arg6,
             CancellationToken cancellationToken)
         {
+            // TODO: investigate
             //var userGroupName = CreateUserGroupName(userName ?? UnauthorizedUserName);
             //var group = _notificationHub.Clients.Group(userGroupName);
+
             await _notificationHub.Clients.All.SendAsync(
                 method: javascriptMethodName,
                 arg1: arg1,

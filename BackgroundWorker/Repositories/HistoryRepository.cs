@@ -10,8 +10,10 @@ namespace BackgroundWorker.Repositories
         Task UpdateHistoryRecordAsync(Guid id, Uri resultedLink, TimeSpan duration, DateTime completed, CancellationToken cancellationToken = default);
     }
 
-    public class HistoryRepository(CoreDbContext _context) : IHistoryRepository
+    public class HistoryRepository(CoreDbContext context) : IHistoryRepository
     {
+        private readonly CoreDbContext _context = context;
+
         public async Task CreateHistoryRecordsAsync(IEnumerable<HistoryModel> histories, CancellationToken cancellationToken = default)
         {
             await _context.History.AddRangeAsync(histories, cancellationToken);

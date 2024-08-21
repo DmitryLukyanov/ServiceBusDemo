@@ -7,10 +7,13 @@ using UI.Utils;
 
 namespace UI.Controllers
 {
-    public class HomeController(HttpClientContainer _httpClientContainer, ILogger<HomeController> _logger) : Controller
+    public class HomeController(HttpClientContainer httpClientContainer, ILogger<HomeController> logger) : Controller
     {
         private const string GetHistoryUri = "History/GetHistory";
         private const string SendRequestUri = "ServiceBus/GenerateMessages";
+        
+        private readonly HttpClientContainer _httpClientContainer = httpClientContainer;
+        private readonly ILogger<HomeController> _logger = logger;
 
         public async Task<IActionResult> Index()
         {

@@ -2,45 +2,32 @@
 
 namespace Models
 {
-    public sealed class HistoryModel
+    [method: JsonConstructor]
+    public sealed class HistoryModel(
+        Guid id,
+        string query,
+        DateTime created,
+        Uri? resultLink,
+        string? userName,
+        TimeSpan? duration,
+        DateTime? completed)
     {
         public HistoryModel(
             Guid id,
             string query,
             DateTime created,
-            string? userName,
-            TimeSpan? duration,
-            DateTime? completed) 
-            : this(id, query, created, resultLink: null, userName, duration, completed)
+            string? userName) 
+            : this(id, query, created, resultLink: null, userName, duration: null, completed: null)
         {
         }
 
-        [JsonConstructor]
-        public HistoryModel(
-            Guid id, 
-            string query, 
-            DateTime created, 
-            Uri? resultLink, 
-            string? userName, 
-            TimeSpan? duration, 
-            DateTime? completed)
-        {
-            Id = id;
-            Query = query ?? throw new ArgumentNullException(nameof(query));
-            Created = created;
-            ResultLink = resultLink; // can be null
-            UserName = userName; // can be null until we enable authorization
-            Duration = duration; // can be null
-            Completed = completed; // can be null
-        }
-
-        public DateTime Created { get; }
-        public DateTime? Completed { get; }
-        public TimeSpan? Duration { get; }
-        public Guid Id { get; }
-        public string Query { get; }
-        public Uri? ResultLink { get; }
-        public string? UserName { get; }
+        public DateTime Created { get; } = created;
+        public DateTime? Completed { get; } = completed; // can be null
+        public TimeSpan? Duration { get; } = duration; // can be null
+        public Guid Id { get; } = id;
+        public string Query { get; } = query ?? throw new ArgumentNullException(nameof(query));
+        public Uri? ResultLink { get; } = resultLink; // can be null
+        public string? UserName { get; } = userName; // can be null until we enable authorization
     }
 
 }

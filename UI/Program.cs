@@ -12,7 +12,11 @@ builder.Services.AddHttpClient<HttpClientContainer>((serviceProvider, client) =>
         var settings = serviceProvider.GetRequiredService<APISettings>();
         client.BaseAddress = new Uri(settings.APIHostAddress);
     })
-    .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(10)));
+    .AddPolicyHandler((serviceProvider, client) =>
+    {
+        var settings = serviceProvider.GetRequiredService<APISettings>();
+        return Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(settings.APITimeoutSeconds));
+    });
 builder.Services.AddSingleton<SignalRSettings>();
 builder.Services.AddSingleton<APISettings>();
 builder.Services.AddTransient<SetConfigurationToCookiesMiddleware>();

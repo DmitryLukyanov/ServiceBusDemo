@@ -9,8 +9,10 @@ namespace API.Repositories
         public Task<IEnumerable<HistoryModel>> GetHistoryAsync(DateTime from);
     }
 
-    public class HistoryRepository(CoreDbContext _context) : IHistoryRepository
+    public class HistoryRepository(CoreDbContext context) : IHistoryRepository
     {
+        private readonly CoreDbContext _context = context;
+
         public async Task<IEnumerable<HistoryModel>> GetHistoryAsync(DateTime from)
         {
             var result = await _context.History.Where(i => i.Created >= from).ToListAsync();
