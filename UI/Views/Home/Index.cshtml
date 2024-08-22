@@ -47,10 +47,15 @@
 <script>
     function showPopup(query, resultedLink) {
         const popup = document.getElementById('popup');
-        popup.style.display = 'block'; 
-
+        popup.style.display = 'block';
+        if (resultedLink) {
+            popup.innerHTML = '<h3>See link <a href="' + resultedLink + '">Download</a></h3>';
+        }
+        else {
+            popup.innerHTML = '<h3>Query is in progress..</h3>';
+        }
         setTimeout(() => {
-            popup.style.display = 'none'; 
+            popup.style.display = 'none';
         }, 5000);
     }
 </script>
