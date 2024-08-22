@@ -35,7 +35,7 @@ namespace API.Controllers
                     var guid = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
                     var model = new LongRunningOperationRequestModel(
                         id: index, 
-                        query: $"SELECT '{guid}' as 'Value'", 
+                        query: $"SELECT '{guid}_{index}' as 'Value'", 
                         DateTime.UtcNow,
                         this.User.Identity?.Name); // emulate query for now
                     await _serviceBusPublisher.SendAsync(model, ct);
