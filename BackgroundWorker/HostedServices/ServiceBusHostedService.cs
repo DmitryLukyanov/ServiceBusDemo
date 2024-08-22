@@ -48,7 +48,7 @@ namespace BackgroundWorker.HostedServices
                 ReceivedErrorFunc,
                 maxConcurrentCalls: _backgroundWorkerSettings.NumberOfHandlers,
                 subQueue: default,
-                _mainCancellationToken);
+                cancellationToken: _mainCancellationToken);
             _logger = logger;
             _serviceScopeFactory = serviceScopeFactory;
         }

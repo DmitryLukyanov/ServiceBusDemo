@@ -9,6 +9,7 @@ using ServiceBusUtils;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHostedService<ServiceBusHostedService>();
+builder.Services.AddHostedService<DeadLetterProcessingHostedService>();
 builder.Services.AddControllers();
 builder.Services.AddSingleton<CoreDbSettings>();
 builder.Services.AddDbContext<CoreDbContext>();
