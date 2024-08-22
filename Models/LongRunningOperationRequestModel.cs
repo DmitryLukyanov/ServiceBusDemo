@@ -1,6 +1,6 @@
 ﻿namespace Models
 {
-    public sealed class LongRunningOperationRequestModel(int id, string query, DateTime created, string? userName)
+    public sealed class LongRunningOperationRequestModel(Guid id, string query, DateTime created, string? userName)
     {
         private static string NormalizeQuery(string query) => query
             .Trim()
@@ -10,7 +10,7 @@
             .Replace("  ", " ")
             .ToLowerInvariant();
 
-        public int Id => id;
+        public Guid Id => id;
         public DateTime Created => created;
         /// <summary>
         /// Used as a key. TODO: think about better approach for cache key

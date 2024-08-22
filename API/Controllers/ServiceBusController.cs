@@ -32,13 +32,14 @@ namespace API.Controllers
                 },
                 body: async (index, ct) =>
                 {
-                    var guid = Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+                    var id = Guid.NewGuid();
+                    var guidBase64 = Convert.ToBase64String(id.ToByteArray());
                     var model = new LongRunningOperationRequestModel(
-                        id: index, 
-                        query: $"SELECT '{guid}_{index}' as 'Value'", 
+                        id: id, 
+                        query: $"SELECT '{guidBase64}_{index}' as 'Value'", 
                         DateTime.UtcNow,
                         this.User.Identity?.Name); // emulate query for now
-                    await _serviceBusPublisher.SendAsync(model, ct);
+                    await _serviceBusPublisher.SendAsync(model, guidBase64, ct);
                 });
 
             _logger.LogInformation("Generating records in queue has been finished.");
@@ -60,12 +61,14 @@ namespace API.Controllers
                 },
                 body: async (item, ct) =>
                 {
+                    var id = Guid.NewGuid();
+                    var guidBase64 = Convert.ToBase64String(id.ToByteArray());
                     var model = new LongRunningOperationRequestModel(
-                        id: item.Index, 
+                        id: id, 
                         query: item.Query, 
                         DateTime.UtcNow,
                         this.User.Identity?.Name);
-                    await _serviceBusPublisher.SendAsync(model, ct);
+                    await _serviceBusPublisher.SendAsync(model, correlationId: guidBase64);
                 });
 
             _logger.LogInformation("Generating records in queue has been finished.");

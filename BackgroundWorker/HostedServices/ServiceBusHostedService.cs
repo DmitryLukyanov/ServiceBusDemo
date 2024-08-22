@@ -87,7 +87,7 @@ namespace BackgroundWorker.HostedServices
                 valueFactory: (str) => Guid.Parse(str)!,
                 out var historyId))
             {
-                historyId = Guid.NewGuid();
+                historyId = message.Id;
                 try
                 {
                     // initialize processing
