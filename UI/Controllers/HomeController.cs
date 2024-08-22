@@ -15,6 +15,7 @@ namespace UI.Controllers
         private readonly HttpClientContainer _httpClientContainer = httpClientContainer;
         private readonly ILogger<HomeController> _logger = logger;
 
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public async Task<IActionResult> Index()
         {
             IEnumerable<HistoryModel> histories;
@@ -95,6 +96,12 @@ namespace UI.Controllers
                 }
                 return result;
             }
+        }
+
+        [HttpGet]
+        public PartialViewResult Popup()
+        {
+            return PartialView();
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

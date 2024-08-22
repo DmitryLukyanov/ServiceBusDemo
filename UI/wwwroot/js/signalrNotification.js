@@ -13,6 +13,8 @@ try {
         var messagelist = document.getElementById("messagesList");
         const inProgressMessage = "In progress";
 
+        showPopup(query, resultedUrl);
+
         var existedTr = document.getElementById(id);
         if (!existedTr) {
             var elementindex = messagelist.rows.length;

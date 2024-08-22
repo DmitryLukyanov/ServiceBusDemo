@@ -26,7 +26,35 @@
     th {
         background-color: #f2f2f2;
     }
+
+    #popup {
+        display: none;
+        position: fixed;
+        top: 90%;
+        left: 90%;
+        transform: translate(-50%, -50%);
+        padding: 10px;
+        background-color: #f8d7da;
+        border: 1px solid black;
+        color: #721c24;
+        font-size: 8px;
+        box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.1);
+        border-radius: 2px;
+        z-index: 1000;
+    }
 </style>
+
+<script>
+    function showPopup(query, resultedLink) {
+        const popup = document.getElementById('popup');
+        popup.style.display = 'block'; 
+
+        setTimeout(() => {
+            popup.style.display = 'none'; 
+        }, 5000);
+    }
+</script>
+
 <div class="text-center">
     @Html.Hidden(
             nameof(UI.Settings.SignalRSettings.SignalRHostAddress),
@@ -35,9 +63,10 @@
             ? hostAddress
             : null))
     <h1 class="display-4">Operations history</h1>
+    <div id="popup"><h3>You're received notification!</h3></div>
 
     <div class="justify-content-center">
-        <div >
+        <div>
             <table style="list-style-type: none; padding: 0" id="messagesList">
                 <!-- Header Row -->
                 <tr>
