@@ -90,7 +90,9 @@ namespace API.Controllers
         }
 
         [HttpGet("ReceiveAndDeleteMessagesFromQueue")]
-        public async Task<IEnumerable<ServiceBusReceivedMessage>> ReceiveAndDeleteMessagesFromQueue([FromQuery] int maxMessages = 50)
+        public async Task<IEnumerable<ServiceBusReceivedMessage>> ReceiveAndDeleteMessagesFromQueue(
+            [FromQuery] int maxMessages = 50, 
+            [FromQuery] bool fromDeadLetter = false)
         {
             _logger.LogInformation("Receiving messages from queue...");
 
@@ -99,7 +101,8 @@ namespace API.Controllers
                 _serviceBusSettings.QueueName,
                 new ServiceBusReceiverOptions
                 {
-                    ReceiveMode = ServiceBusReceiveMode.ReceiveAndDelete
+                    ReceiveMode = ServiceBusReceiveMode.ReceiveAndDelete,
+                    SubQueue = fromDeadLetter ? SubQueue.DeadLetter : SubQueue.None
                 });
 
             var messages = await receiver.ReceiveMessagesAsync(

@@ -4,6 +4,7 @@ using BackgroundWorker.Repositories;
 using BackgroundWorker.SignalR;
 using BackgroundWorker.Utils;
 using Microsoft.Extensions.Azure;
+using Serilog;
 using ServiceBusUtils;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,6 +53,17 @@ builder.Services.AddCors(options =>
                 .WithOrigins(backgroundWorkerSettings.AllowedProductionOrigins.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
                 .WithHeaders("x-requested-with", "x-signalr-user-agent")
                 .AllowCredentials());
+    }
+});
+
+builder.Host.UseSerilog((context, serviceProvider, config) =>
+{
+    var settings = serviceProvider.GetRequiredService<BackgroundWorkerSettings>();
+    if (!string.IsNullOrWhiteSpace(settings.LogFile))
+    {
+        config.MinimumLevel.Information()
+            .WriteTo.Console()
+            .WriteTo.File(settings.LogFile, restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
     }
 });
 

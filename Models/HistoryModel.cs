@@ -10,14 +10,16 @@ namespace Models
         Uri? resultLink,
         string? userName,
         TimeSpan? duration,
-        DateTime? completed)
+        DateTime? completed,
+        DateTime sentAt)
     {
         public HistoryModel(
             Guid id,
             string query,
             DateTime created,
-            string? userName) 
-            : this(id, query, created, resultLink: null, userName, duration: null, completed: null)
+            string? userName,
+            DateTime sentAt) 
+            : this(id, query, created, resultLink: null, userName, duration: null, completed: null, sentAt)
         {
         }
 
@@ -27,7 +29,7 @@ namespace Models
         public Guid Id { get; } = id;
         public string Query { get; } = query ?? throw new ArgumentNullException(nameof(query));
         public Uri? ResultLink { get; } = resultLink; // can be null
+        public DateTime SentAt { get; } = sentAt;
         public string? UserName { get; } = userName; // can be null until we enable authorization
     }
-
 }

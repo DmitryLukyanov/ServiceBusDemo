@@ -12,5 +12,6 @@
         public string BlobContainerName => configuration.GetValue<string>(nameof(BlobContainerName)) ?? throw new ArgumentNullException(nameof(BlobContainerName));
         public string BlobCacheMetadataKey => configuration.GetValue<string>(nameof(BlobCacheMetadataKey)) ?? throw new ArgumentNullException(nameof(BlobCacheMetadataKey));
         public int BlobCacheValidDays => configuration.GetValue<int?>(nameof(BlobCacheValidDays)) ?? throw new ArgumentNullException(nameof(BlobCacheValidDays));
+        public string LogFile => configuration.GetValue<string?>(nameof(LogFile)) ?? throw new ArgumentNullException(nameof(LogFile));
     }
 }

@@ -33,10 +33,10 @@ namespace BackgroundWorker.SignalR
             CancellationToken cancellationToken)
         {
             // TODO: investigate
-            //var userGroupName = CreateUserGroupName(userName ?? UnauthorizedUserName);
-            //var group = _notificationHub.Clients.Group(userGroupName);
+            var userGroupName = CreateUserGroupName(userName ?? UnauthorizedUserName);
+            var group = _notificationHub.Clients.Group(userGroupName);
 
-            await _notificationHub.Clients.All.SendAsync(
+            await group.SendAsync(
                 method: javascriptMethodName,
                 arg1: arg1,
                 arg2: arg2,

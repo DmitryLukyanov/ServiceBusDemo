@@ -70,7 +70,7 @@ namespace BackgroundWorker.HostedServices
         private async Task<(Dictionary<string, object>? ModifiedProperties, bool Success)> ReceivedMessageFunc(ProcessMessageEventArgs args)
         {
             _logger.LogWarning(args.Message.DeadLetterErrorDescription);
-            Debugger.Break();
+            //Debugger.Break();
             await args.CompleteMessageAsync(args.Message);
             return default;
         }

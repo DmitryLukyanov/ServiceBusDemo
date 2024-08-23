@@ -69,9 +69,8 @@ namespace BackgroundWorker.HostedServices
             var applicationProperties = args.Message.ApplicationProperties;
             var modifiedProperties = new Dictionary<string, object>(applicationProperties);
 
-            LogMessage($"Message has been received.");
-
             var message = JsonSerializer.Deserialize<LongRunningOperationRequestModel>(args.Message.Body.ToStream())!;
+            LogMessage($"Message has been received. IncomeMessageId: {message.Id}. Application properties: [{string.Join(',', applicationProperties.Select(i => $"{i.Key}={i.Value}"))}]");
 
             await using var scope = _serviceScopeFactory.CreateAsyncScope();
 
@@ -81,7 +80,7 @@ namespace BackgroundWorker.HostedServices
 
             // 1. Start processing
             var createdAt = DateTime.UtcNow;
-            if (!TryGetValueFromAplicationProperties( // TODO: can metadata expire?
+            if (!TryGetValueFromApplicationProperties( // TODO: can metadata expire?
                 applicationProperties,
                 key: HistoryIdKey,
                 valueFactory: (str) => Guid.Parse(str)!,
@@ -96,7 +95,8 @@ namespace BackgroundWorker.HostedServices
                             historyId,
                             message.Query,
                             createdAt,
-                            message.UserName)
+                            message.UserName,
+                            message.Created)
                     ]);
                     modifiedProperties.AddOrUpdate(HistoryIdKey, historyId);
                 }
@@ -151,7 +151,7 @@ namespace BackgroundWorker.HostedServices
             }
 
             // 4. save to blob
-            if (!TryGetValueFromAplicationProperties( // TODO: can metadata expire?
+            if (!TryGetValueFromApplicationProperties( // TODO: can metadata expire?
                     applicationProperties,
                     key: ResultedLinkKey,
                     valueFactory: (str) => new Uri(str)!,
@@ -171,7 +171,7 @@ namespace BackgroundWorker.HostedServices
 
             // 5. save history
             var completed = DateTime.UtcNow;
-            if (!TryGetValueFromAplicationProperties( // TODO: can metadata expire?
+            if (!TryGetValueFromApplicationProperties( // TODO: can metadata expire?
                 applicationProperties,
                 key: HistoryIdCompletedKey,
                 valueFactory: (str) => DateTime.Parse(str)!,
@@ -274,7 +274,7 @@ namespace BackgroundWorker.HostedServices
                 return blob.Uri;
             }
 
-            static bool TryGetValueFromAplicationProperties<TValue>(
+            static bool TryGetValueFromApplicationProperties<TValue>(
                 IReadOnlyDictionary<string, object> properties,
                 string key,
                 Func<string, TValue> valueFactory,
@@ -293,7 +293,7 @@ namespace BackgroundWorker.HostedServices
 
             void LogMessage(string message, Exception? ex = null)
             {
-                var logMessagePrefix = $"{args.Identifier}: Delivery count: {args.Message.DeliveryCount}";
+                var logMessagePrefix = $"{args.Identifier}; Delivery count: {args.Message.DeliveryCount}; Message Id: {args.Message.MessageId}; Correlation Id: {args.Message.CorrelationId}";
                 if (ex == null)
                 {
                     _logger.LogInformation($"{logMessagePrefix}.{message}.");
