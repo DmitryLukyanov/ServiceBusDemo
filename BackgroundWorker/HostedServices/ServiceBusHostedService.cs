@@ -1,14 +1,14 @@
 ﻿using Azure.Messaging.ServiceBus;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using BackgroundWorker.Data;
+using Models;
 using BackgroundWorker.Repositories;
 using BackgroundWorker.SignalR;
 using BackgroundWorker.Utils;
-using Microsoft.AspNetCore.SignalR;
 using ServiceBusUtils;
 using System.Globalization;
 using System.Text.Json;
+using System.Diagnostics;
 
 namespace BackgroundWorker.HostedServices
 {
@@ -20,7 +20,7 @@ namespace BackgroundWorker.HostedServices
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly ILogger<ServiceBusHostedService> _logger;
         private readonly CancellationToken _mainCancellationToken;
-        private readonly IHubContext<NotificationHub> _notificationHub;
+        private readonly SignalRUtils _notificationHub;
         private readonly ServiceBusConsumer _serviceBusConsumer;
         private readonly IServiceBusSettings _serviceBusSettings;
         private readonly IServiceScopeFactory _serviceScopeFactory;
@@ -31,7 +31,7 @@ namespace BackgroundWorker.HostedServices
             ILogger<ServiceBusHostedService> logger,
             BackgroundWorkerSettings backgroundWorkerSettings,
             BlobServiceClient blobServiceClient,
-            IHubContext<NotificationHub> notificationHub)
+            SignalRUtils notificationHub)
         {
             _notificationHub = notificationHub;
             _backgroundWorkerSettings = backgroundWorkerSettings;
@@ -48,7 +48,7 @@ namespace BackgroundWorker.HostedServices
                 ReceivedErrorFunc,
                 maxConcurrentCalls: _backgroundWorkerSettings.NumberOfHandlers,
                 subQueue: default,
-                _mainCancellationToken);
+                cancellationToken: _mainCancellationToken);
             _logger = logger;
             _serviceScopeFactory = serviceScopeFactory;
         }
@@ -56,112 +56,162 @@ namespace BackgroundWorker.HostedServices
         private Task ReceivedErrorFunc(ProcessErrorEventArgs args)
         {
             _logger.LogError(args.Exception, $"Received error message: {args.Exception.Message}");
-            // TODO: signalr about error
-            // TODO2: error handling
-            throw new NotImplementedException();
+            // such messages will appear in dead letter queue, handle it there
+            return Task.CompletedTask;
         }
 
         private async Task<(Dictionary<string, object>? ModifiedProperties, bool Success)> ReceivedMessageFunc(ProcessMessageEventArgs args)
         {
             const string ResultedLinkKey = "ResultedLink";
-            const string SavedToHistoryKey = "SavedToHistory";
-            var now = DateTime.UtcNow;
-            var applicationProperties = args.Message.ApplicationProperties;
+            const string HistoryIdKey = "HistoryId";
+            const string HistoryIdCompletedKey = "HistoryIdCompleted";
 
-            _logger.LogInformation($"The message ({args.Identifier}) with content ({args.Message}) has been received.");
+            var applicationProperties = args.Message.ApplicationProperties;
+            var modifiedProperties = new Dictionary<string, object>(applicationProperties);
 
             var message = JsonSerializer.Deserialize<LongRunningOperationRequestModel>(args.Message.Body.ToStream())!;
+            LogMessage($"Message has been received. IncomeMessageId: {message.Id}. Application properties: [{string.Join(',', applicationProperties.Select(i => $"{i.Key}={i.Value}"))}]");
 
             await using var scope = _serviceScopeFactory.CreateAsyncScope();
 
             // NOTE: do not inject provider in ctor to limit the scope where instance of dbcontext and repository are created.
             var longRunningOperationRepository = scope.ServiceProvider.GetRequiredService<ILongRunningOperationRepository>();
             var historyRepository = scope.ServiceProvider.GetRequiredService<IHistoryRepository>();
-            IEnumerable<dynamic> longRunningOperationResult;
 
+            // 1. Start processing
+            var createdAt = DateTime.UtcNow;
+            if (!TryGetValueFromApplicationProperties( // TODO: can metadata expire?
+                applicationProperties,
+                key: HistoryIdKey,
+                valueFactory: (str) => Guid.Parse(str)!,
+                out var historyId))
+            {
+                historyId = message.Id;
+                try
+                {
+                    // initialize processing
+                    await historyRepository.CreateHistoryRecordsAsync([
+                        new HistoryModel(
+                            historyId,
+                            message.Query,
+                            createdAt,
+                            message.UserName,
+                            message.Created)
+                    ]);
+                    modifiedProperties.AddOrUpdate(HistoryIdKey, historyId);
+                }
+                catch (Exception ex)
+                {
+                    LogMessage($"History initialization has been failed", ex);
+                    return (modifiedProperties, false);
+                }
+            }
+
+            var started = DateTime.UtcNow;
+            // 2. notify signalr
             try
             {
-                // 1. Operation itself
+                await _notificationHub.SendAsync(
+                    javascriptMethodName: "OnOperationNotified",
+                    userName: message.UserName,
+                    arg1: historyId,
+                    arg2: message.Query,
+                    arg3: started,
+                    arg4: null,
+                    arg5: null,
+                    arg6: null,
+                    cancellationToken: _mainCancellationToken);
+            }
+            catch (Exception ex)
+            {
+                LogMessage("SignalR sending has been failed", ex);
+                // ignore it since it's minor intermediate notification
+            }
+
+            IEnumerable<dynamic> longRunningOperationResult;
+            var stopWatch = Stopwatch.StartNew();
+
+            // 3. Operation itself
+            try
+            {
                 longRunningOperationResult = await longRunningOperationRepository.GetLongRunningOperationResultAsync(query: message.Query, longRunning: true, _mainCancellationToken);
+                // technically longRunningOperationResult can be saved,
+                // but the document can be too big for saving in metadata
+                // so just throw and try again from scratch
             }
             catch (Exception ex)
             {
                 // no need to save anything at this point
-                _logger.LogError(ex, "Long running operation has been failed.");
-                throw;
+                LogMessage("Long running operation has been failed", ex);
+                return (modifiedProperties, false);
+            }
+            finally
+            {
+                stopWatch.Stop();
             }
 
-            if (!TryGetValueFromAplicationProperties( // TODO: can metadata expire?
-                    applicationProperties, 
-                    key: ResultedLinkKey, 
-                    valueFactory: (str) => new Uri(str)!, 
+            // 4. save to blob
+            if (!TryGetValueFromApplicationProperties( // TODO: can metadata expire?
+                    applicationProperties,
+                    key: ResultedLinkKey,
+                    valueFactory: (str) => new Uri(str)!,
                     out var resultedLink))
             {
                 try
                 {
-                    // 2. save to blob
                     resultedLink = await GetOrAddFileToBlobAsync(_blobContainer, message, longRunningOperationResult, _backgroundWorkerSettings, _mainCancellationToken);
+                    modifiedProperties.AddOrUpdate(ResultedLinkKey, resultedLink!);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Saving to blob has been failed");
-                    // technically longRunningOperationResult can be saved,
-                    // but the document can be too big for saving in metadata
-                    // so just throw and try again from scratch
-                    throw;
+                    LogMessage("Saving to blob has been failed", ex);
+                    return (modifiedProperties, false);
                 }
             }
 
-            if (!TryGetValueFromAplicationProperties( // TODO: can metadata expire?
+            // 5. save history
+            var completed = DateTime.UtcNow;
+            if (!TryGetValueFromApplicationProperties( // TODO: can metadata expire?
                 applicationProperties,
-                key: SavedToHistoryKey,
+                key: HistoryIdCompletedKey,
                 valueFactory: (str) => DateTime.Parse(str)!,
                 out var savedToHistoryAt))
             {
                 try
                 {
-                    // 3. save history
-                    await historyRepository.CreateHistoryRecordAsync(
-                        histories: [
-                            new HistoryModel(
-                            id: Guid.NewGuid(),
-                            message.Query,
-                            now,
-                            resultedLink)
-                        ],
+                    await historyRepository.UpdateHistoryRecordAsync(
+                        historyId,
+                        resultedLink!,
+                        stopWatch.Elapsed,
+                        completed,
                         cancellationToken: _mainCancellationToken);
+                    modifiedProperties.AddOrUpdate(HistoryIdCompletedKey, completed);
                 }
                 catch (Exception ex)
                 {
-                    var modifiedProperties = new Dictionary<string, object>(applicationProperties);
-                    modifiedProperties.AddOrUpdate(ResultedLinkKey, resultedLink!);
-
-                    _logger.LogError(ex, "Saving history has been failed.");
+                    LogMessage("Saving history has been failed", ex);
                     return (modifiedProperties, false);
-                    // Log and ignore it for now, let signal r try to propagate the result
                 }
             }
 
-            // 4. notify signalr
+            // 6. notify signalr
             try
             {
-                // TODO: use particular client isntead All
-                await _notificationHub.Clients.All.SendAsync(
-                    method: "OnOperationComplited",
-                    //index, query, createdAt, resulteUrl
-                    arg1: Guid.NewGuid(), // TODO: review logic
+                await _notificationHub.SendAsync(
+                    javascriptMethodName: "OnOperationNotified",
+                    userName: message.UserName,
+                    arg1: historyId,
                     arg2: message.Query,
-                    arg3: now,
+                    arg3: started,
                     arg4: resultedLink,
+                    arg5: stopWatch.Elapsed,
+                    arg6: completed,
                     cancellationToken: _mainCancellationToken);
             }
             catch (Exception ex)
             {
-                var modifiedProperties = new Dictionary<string, object>(args.Message.ApplicationProperties);
-                modifiedProperties.AddOrUpdate(SavedToHistoryKey, now);
-
-                _logger.LogError(ex, "SignalR sending has been failed.");
-                return (modifiedProperties, false);
+                LogMessage("SignalR sending has been failed", ex);
+                return (modifiedProperties, false); // TODO: maybe it makes sense to ignore this notification too
             }
 
             _logger.LogInformation($"The message ({args.Identifier}) with content ({args.Message}) has been processed.");
@@ -175,6 +225,7 @@ namespace BackgroundWorker.HostedServices
                 CancellationToken cancellationToken)
             {
                 // TODO: choose much better key than query, consider generating some hash or guid
+                // TODO: add timeout for cache / TTL
                 var blob = blobContainer.GetBlobClient(message.NormalizedQuery.ToString());
                 if (await blob.ExistsAsync(cancellationToken))
                 {
@@ -207,7 +258,7 @@ namespace BackgroundWorker.HostedServices
                         HttpHeaders = new BlobHttpHeaders
                         {
                             ContentType = "application/json",
-                            // Investigate exact behavior
+                            // TODO: Investigate exact behavior
                             // CacheControl = $"max-age={TimeSpan.FromDays(_backgroundWorkerSettings.BlobCacheValidDays).TotalSeconds}"
                         },
                         Metadata = new Dictionary<string, string>
@@ -223,9 +274,9 @@ namespace BackgroundWorker.HostedServices
                 return blob.Uri;
             }
 
-            static bool TryGetValueFromAplicationProperties<TValue>(
-                IReadOnlyDictionary<string, object> properties, 
-                string key, 
+            static bool TryGetValueFromApplicationProperties<TValue>(
+                IReadOnlyDictionary<string, object> properties,
+                string key,
                 Func<string, TValue> valueFactory,
                 out TValue? value)
             {
@@ -238,6 +289,19 @@ namespace BackgroundWorker.HostedServices
                     return true;
                 }
                 return false;
+            }
+
+            void LogMessage(string message, Exception? ex = null)
+            {
+                var logMessagePrefix = $"{args.Identifier}; Delivery count: {args.Message.DeliveryCount}; Message Id: {args.Message.MessageId}; Correlation Id: {args.Message.CorrelationId}";
+                if (ex == null)
+                {
+                    _logger.LogInformation($"{logMessagePrefix}.{message}.");
+                }
+                else
+                {
+                    _logger.LogError(ex, $"{logMessagePrefix}.{message}.");
+                }
             }
         }
 

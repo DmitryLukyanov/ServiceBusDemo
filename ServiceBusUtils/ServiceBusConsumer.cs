@@ -19,6 +19,7 @@ namespace ServiceBusUtils
             Func<ProcessErrorEventArgs, Task> receivedErrorFunc,
             int maxConcurrentCalls = 1,
             SubQueue subQueue = SubQueue.None,
+            bool autoCompleteMessages = false,
             CancellationToken cancellationToken = default)
         {
             _cancellationToken = cancellationToken;
@@ -35,7 +36,7 @@ namespace ServiceBusUtils
                     var _serviceBusProcessorOptions = new ServiceBusProcessorOptions
                     {
                         MaxConcurrentCalls = _maxConcurrentCalls,
-                        AutoCompleteMessages = false,
+                        AutoCompleteMessages = autoCompleteMessages,
                         SubQueue = subQueue,
                     };
                     return _client.CreateProcessor(_queueName, _serviceBusProcessorOptions);

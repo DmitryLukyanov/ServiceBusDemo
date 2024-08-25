@@ -36,7 +36,7 @@ namespace ServiceBusUtils
             }
         }
 
-        public async Task SendAsync<T>(T payload, CancellationToken cancellationToken)
+        public async Task SendAsync<T>(T payload, string correlationId, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
 
@@ -47,8 +47,12 @@ namespace ServiceBusUtils
             var messageId = Guid.NewGuid();
             var message = new ServiceBusMessage(messagePayload)
             {
-                MessageId = messageId.ToString()
+                MessageId = messageId.ToString(),
             };
+            if (!string.IsNullOrWhiteSpace(correlationId))
+            {
+                message.CorrelationId = correlationId;
+            }
             //if (!message.ApplicationProperties.TryAdd())
             //{
             //    throw new InvalidOperationException("TODO: must not happen");

@@ -4,9 +4,11 @@ namespace BackgroundWorker.SignalR
 {
     public class NotificationHub : Hub
     {
-        public override Task OnConnectedAsync()
+        public override async Task OnConnectedAsync()
         {
-            return base.OnConnectedAsync();
+            await SignalRUtils.ConfigureOnConnectedAsync(this);
+
+            await base.OnConnectedAsync();
         }
     }
 }

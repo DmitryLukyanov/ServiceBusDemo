@@ -12,8 +12,10 @@ namespace BackgroundWorker.Repositories
             CancellationToken cancellationToken = default);
     }
 
-    public class LongRunningOperationRepository(CoreDbSettings _backgroundWorkerSettings) : ILongRunningOperationRepository
+    public class LongRunningOperationRepository(CoreDbSettings backgroundWorkerSettings) : ILongRunningOperationRepository
     {
+        private readonly CoreDbSettings _backgroundWorkerSettings = backgroundWorkerSettings;
+
         public async Task<IEnumerable<dynamic>> GetLongRunningOperationResultAsync(
             string query,
             bool longRunning = false,
@@ -30,7 +32,8 @@ namespace BackgroundWorker.Repositories
             sqlDataAdapter.Fill(dataTable);
             if (longRunning)
             {
-                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken); // emulate long running call
+                var randomDelay = new Random().Next(5, 15);
+                await Task.Delay(TimeSpan.FromSeconds(randomDelay), cancellationToken); // emulate long running call
             }
 
             return Enumerable.Concat<dynamic>(
