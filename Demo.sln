@@ -13,6 +13,31 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ServiceBusUtils", "ServiceB
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Models", "Models\Models.csproj", "{D66E828A-371A-479A-8F77-F5548282A9EE}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GitHub", "GitHub", "{D3ED8F83-78B8-435A-AAB4-AB464BEE16E3}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\deployToAzure.yml = .github\workflows\deployToAzure.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ArmTemplates", "ArmTemplates", "{975DBBD6-5347-4668-8C32-E7CF4ACFB4FA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "serviceBus", "serviceBus", "{CEA42999-4716-4904-B434-07D298645794}"
+	ProjectSection(SolutionItems) = preProject
+		DeploymentTemplates\serviceBus\parameters.json = DeploymentTemplates\serviceBus\parameters.json
+		DeploymentTemplates\serviceBus\template.json = DeploymentTemplates\serviceBus\template.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "webApi", "webApi", "{DADE5DA6-B7A4-48E2-B4CA-21B223CA8FB9}"
+	ProjectSection(SolutionItems) = preProject
+		DeploymentTemplates\webApi\parameters.json = DeploymentTemplates\webApi\parameters.json
+		DeploymentTemplates\webApi\template.json = DeploymentTemplates\webApi\template.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blob", "blob", "{F3288660-06A3-4AC2-A3C0-B5740CCBACB7}"
+	ProjectSection(SolutionItems) = preProject
+		DeploymentTemplates\blob\parameters.json = DeploymentTemplates\blob\parameters.json
+		DeploymentTemplates\blob\template.json = DeploymentTemplates\blob\template.json
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,6 +67,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CEA42999-4716-4904-B434-07D298645794} = {975DBBD6-5347-4668-8C32-E7CF4ACFB4FA}
+		{DADE5DA6-B7A4-48E2-B4CA-21B223CA8FB9} = {975DBBD6-5347-4668-8C32-E7CF4ACFB4FA}
+		{F3288660-06A3-4AC2-A3C0-B5740CCBACB7} = {975DBBD6-5347-4668-8C32-E7CF4ACFB4FA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4FAA98C1-D611-488F-89D7-BF6CB86E3ACA}
