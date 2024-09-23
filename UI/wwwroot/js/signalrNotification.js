@@ -4,7 +4,7 @@ try {
     let signalRHostName= document.getElementById("SignalRHostAddress").value
     var connection = new signalR.HubConnectionBuilder()
         .withUrl(signalRHostName.concat("/NotificationHub"))
-        .configureLogging(signalR.LogLevel.Debug)
+        //.configureLogging(signalR.LogLevel.Debug)
         .withAutomaticReconnect()
         .build();
 
